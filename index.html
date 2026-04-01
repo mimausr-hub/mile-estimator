@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>マイル見積り</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f3f6fb;
+      --bg-accent:
+        radial-gradient(circle at top left, rgba(14, 116, 144, 0.18), transparent 34%),
+        radial-gradient(circle at top right, rgba(249, 115, 22, 0.14), transparent 26%),
+        linear-gradient(180deg, #f9fbff 0%, #eef3f8 100%);
+      --surface: rgba(255, 255, 255, 0.82);
+      --surface-strong: rgba(255, 255, 255, 0.96);
+      --surface-soft: rgba(244, 247, 252, 0.92);
+      --border: rgba(15, 23, 42, 0.1);
+      --text: #142033;
+      --text-muted: #5a687d;
+      --primary: #0f766e;
+      --primary-strong: #115e59;
+      --primary-soft: rgba(15, 118, 110, 0.13);
+      --warning: #b45309;
+      --warning-soft: rgba(180, 83, 9, 0.12);
+      --danger: #c2410c;
+      --danger-soft: rgba(194, 65, 12, 0.12);
+      --shadow: 0 18px 44px rgba(15, 23, 42, 0.1);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --max-width: 860px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #08111c;
+        --bg-accent:
+          radial-gradient(circle at top left, rgba(45, 212, 191, 0.12), transparent 34%),
+          radial-gradient(circle at top right, rgba(251, 146, 60, 0.14), transparent 28%),
+          linear-gradient(180deg, #09111b 0%, #0d1624 100%);
+        --surface: rgba(11, 19, 33, 0.84);
+        --surface-strong: rgba(14, 23, 38, 0.98);
+        --surface-soft: rgba(13, 23, 38, 0.94);
+        --border: rgba(148, 163, 184, 0.18);
+        --text: #edf4ff;
+        --text-muted: #9eb0c5;
+        --primary: #41c7bc;
+        --primary-strong: #76e0d7;
+        --primary-soft: rgba(65, 199, 188, 0.14);
+        --warning: #f59e0b;
+        --warning-soft: rgba(245, 158, 11, 0.14);
+        --danger: #fb923c;
+        --danger-soft: rgba(251, 146, 60, 0.14);
+        --shadow: 0 24px 48px rgba(2, 6, 23, 0.38);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Hiragino Sans", "Yu Gothic", "BIZ UDPGothic", sans-serif;
+      color: var(--text);
+      background: var(--bg-accent);
+      line-height: 1.5;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.06), transparent 42%),
+        linear-gradient(300deg, rgba(255, 255, 255, 0.04), transparent 34%);
+      opacity: 0.8;
+    }
+
+    .shell {
+      position: relative;
+      width: min(calc(100% - 24px), var(--max-width));
+      margin: 0 auto;
+      padding: 18px 0 26px;
+    }
+
+    .app-header {
+      margin-bottom: 14px;
+      padding: 2px 2px 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      line-height: 1.15;
+      letter-spacing: 0.02em;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      overflow: hidden;
+    }
+
+    .card-body {
+      padding: 18px;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--text-muted);
+    }
+
+    .input-group {
+      display: grid;
+      gap: 14px;
+    }
+
+    .rate-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-wrap span {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.86rem;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .input-wrap .suffix {
+      right: 12px;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--surface-strong);
+      color: var(--text);
+      border-radius: var(--radius-md);
+      padding: 13px 78px 13px 14px;
+      font: inherit;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    }
+
+    .mile-input input {
+      padding-right: 68px;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--primary-soft);
+    }
+
+    .status-list {
+      display: grid;
+      gap: 8px;
+      min-height: 18px;
+    }
+
+    .status {
+      display: none;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .status.active {
+      display: block;
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .status.warning {
+      color: var(--warning);
+    }
+
+    .status.info {
+      color: var(--primary);
+    }
+
+    .output-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .quote-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .quote-row {
+      display: grid;
+      gap: 4px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-soft);
+    }
+
+    .quote-label {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.03em;
+    }
+
+    .quote-value {
+      font-size: clamp(1.06rem, 2.6vw, 1.24rem);
+      font-weight: 800;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .message-wrap {
+      display: grid;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .message-box {
+      width: 100%;
+      min-height: 210px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-strong);
+      color: var(--text);
+      padding: 14px;
+      font: inherit;
+      line-height: 1.65;
+      resize: vertical;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .button {
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+      color: #ffffff;
+      padding: 11px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(15, 118, 110, 0.24);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 32px rgba(15, 118, 110, 0.26);
+    }
+
+    .button:active {
+      transform: translateY(1px);
+    }
+
+    .button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translate(-50%, 16px);
+      background: rgba(17, 24, 39, 0.92);
+      color: #f8fafc;
+      padding: 12px 16px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      z-index: 10;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        width: min(calc(100% - 16px), var(--max-width));
+        padding-top: 14px;
+      }
+
+      .card-body {
+        padding: 16px;
+      }
+
+      .rate-grid {
+        gap: 10px;
+      }
+
+      .quote-row {
+        padding: 12px 14px;
+      }
+
+      .message-box {
+        min-height: 190px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="app-header">
+      <h1>マイル見積り</h1>
+    </header>
+
+    <section class="stack">
+      <article class="card">
+        <div class="card-body">
+          <div class="input-group">
+            <section>
+              <h2 class="section-title">マイル数</h2>
+              <div class="field mile-input">
+                <div class="input-wrap">
+                  <input id="mileCount" type="number" inputmode="numeric" step="1" min="0" placeholder="例: 120000">
+                  <span class="suffix">マイル</span>
+                </div>
+              </div>
+              <div class="status-list" aria-live="polite">
+                <div class="status error" id="mileError"></div>
+                <div class="status warning" id="mileWarning"></div>
+                <div class="status info" id="mileAdjusted"></div>
+              </div>
+            </section>
+
+            <section>
+              <h2 class="section-title">レート設定</h2>
+              <div class="rate-grid">
+                <div class="field">
+                  <label for="auctionRate">ヤフオク</label>
+                  <div class="input-wrap">
+                    <input id="auctionRate" type="number" inputmode="decimal" step="0.01" min="0" value="2.52">
+                    <span class="suffix">円/マイル</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="bankRate">銀行振込</label>
+                  <div class="input-wrap">
+                    <input id="bankRate" type="number" inputmode="decimal" step="0.01" min="0" value="2.42">
+                    <span class="suffix">円/マイル</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-body">
+          <div class="output-grid">
+            <section>
+              <h2 class="section-title">見積り結果</h2>
+              <div class="quote-list">
+                <div class="quote-row">
+                  <div class="quote-label">ヤフオク</div>
+                  <div class="quote-value" id="auctionSummary">-</div>
+                </div>
+                <div class="quote-row">
+                  <div class="quote-label">銀行振込</div>
+                  <div class="quote-value" id="bankSummary">-</div>
+                </div>
+              </div>
+            </section>
+
+            <section class="message-wrap">
+              <h2 class="section-title">メッセージ</h2>
+              <textarea id="messageBox" class="message-box" readonly aria-label="自動生成メッセージ">マイル数を入力すると、ここにご案内文を生成します。</textarea>
+              <div class="actions">
+                <button id="copyButton" class="button" type="button" disabled>コピー</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite">メッセージをコピーしました</div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "mile-quote-rates-v1";
+      const DEFAULT_RATES = {
+        auctionRate: 2.52,
+        bankRate: 2.42
+      };
+
+      const elements = {
+        auctionRate: document.getElementById("auctionRate"),
+        bankRate: document.getElementById("bankRate"),
+        mileCount: document.getElementById("mileCount"),
+        mileError: document.getElementById("mileError"),
+        mileWarning: document.getElementById("mileWarning"),
+        mileAdjusted: document.getElementById("mileAdjusted"),
+        auctionSummary: document.getElementById("auctionSummary"),
+        bankSummary: document.getElementById("bankSummary"),
+        messageBox: document.getElementById("messageBox"),
+        copyButton: document.getElementById("copyButton"),
+        toast: document.getElementById("toast")
+      };
+
+      let toastTimerId = null;
+
+      function loadRates() {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (!stored) {
+            return DEFAULT_RATES;
+          }
+
+          const parsed = JSON.parse(stored);
+          return {
+            auctionRate: Number.isFinite(parsed.auctionRate) ? parsed.auctionRate : DEFAULT_RATES.auctionRate,
+            bankRate: Number.isFinite(parsed.bankRate) ? parsed.bankRate : DEFAULT_RATES.bankRate
+          };
+        } catch (error) {
+          return DEFAULT_RATES;
+        }
+      }
+
+      function saveRates(auctionRate, bankRate) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ auctionRate, bankRate }));
+        } catch (error) {
+          return;
+        }
+      }
+
+      function formatAmount(amount) {
+        return `${new Intl.NumberFormat("ja-JP").format(amount)}円`;
+      }
+
+      function formatMiles(miles) {
+        return `${new Intl.NumberFormat("ja-JP").format(miles)}マイル`;
+      }
+
+      function getRoundedAuctionDiscount(amount) {
+        if (amount >= 100000) {
+          return Math.floor(amount / 10000) * 10000;
+        }
+
+        if (amount >= 10000) {
+          return Math.floor(amount / 1000) * 1000;
+        }
+
+        return Math.floor(amount / 100) * 100;
+      }
+
+      function parseRateInput(input, fallback) {
+        if (input.validity.badInput || input.value.trim() === "") {
+          return fallback;
+        }
+
+        const value = Number(input.value);
+        return Number.isFinite(value) && value >= 0 ? value : fallback;
+      }
+
+      function roundUpToUnit(miles) {
+        // 250マイル単位で切り上げ、最小500マイル
+        const rounded = Math.ceil(miles / 250) * 250;
+        return Math.max(rounded, 500);
+      }
+
+      function getMilesState() {
+        const raw = elements.mileCount.value.trim();
+
+        if (elements.mileCount.validity.badInput) {
+          return { valid: false, hasValue: true, error: "マイル数は数値で入力してください。" };
+        }
+
+        if (raw === "") {
+          return { valid: false, hasValue: false, error: "" };
+        }
+
+        const inputMiles = Number(raw);
+
+        if (!Number.isFinite(inputMiles)) {
+          return { valid: false, hasValue: true, error: "マイル数は数値で入力してください。" };
+        }
+
+        if (!Number.isInteger(inputMiles)) {
+          return { valid: false, hasValue: true, error: "マイル数は整数で入力してください。" };
+        }
+
+        if (inputMiles <= 0) {
+          return { valid: false, hasValue: true, error: "マイル数は1以上で入力してください。" };
+        }
+
+        const miles = roundUpToUnit(inputMiles);
+        const adjusted = miles !== inputMiles
+          ? `${new Intl.NumberFormat("ja-JP").format(inputMiles)} → ${new Intl.NumberFormat("ja-JP").format(miles)}マイルに調整（250マイル単位）`
+          : "";
+
+        return {
+          valid: true,
+          hasValue: true,
+          miles,
+          adjusted,
+          warning: ""
+        };
+      }
+
+      function setStatus(element, message) {
+        element.textContent = message;
+        element.classList.toggle("active", Boolean(message));
+      }
+
+      function resetOutput() {
+        elements.auctionSummary.textContent = "-";
+        elements.bankSummary.textContent = "-";
+        elements.messageBox.value = "マイル数を入力すると、ここにご案内文を生成します。";
+        elements.copyButton.disabled = true;
+      }
+
+      function showToast(message) {
+        elements.toast.textContent = message;
+        elements.toast.classList.add("show");
+
+        if (toastTimerId) {
+          clearTimeout(toastTimerId);
+        }
+
+        toastTimerId = window.setTimeout(() => {
+          elements.toast.classList.remove("show");
+        }, 1800);
+      }
+
+      async function copyMessage() {
+        const text = elements.messageBox.value;
+        if (!text || elements.copyButton.disabled) {
+          return;
+        }
+
+        try {
+          if (!navigator.clipboard?.writeText) {
+            throw new Error("Clipboard API unavailable");
+          }
+
+          await navigator.clipboard.writeText(text);
+          showToast("メッセージをコピーしました");
+        } catch (error) {
+          elements.messageBox.focus();
+          elements.messageBox.select();
+
+          const copied = document.execCommand("copy");
+          showToast(copied ? "メッセージをコピーしました" : "コピーできませんでした");
+        } finally {
+          window.getSelection()?.removeAllRanges();
+        }
+      }
+
+      function update() {
+        const auctionRate = parseRateInput(elements.auctionRate, DEFAULT_RATES.auctionRate);
+        const bankRate = parseRateInput(elements.bankRate, DEFAULT_RATES.bankRate);
+
+        saveRates(auctionRate, bankRate);
+
+        const milesState = getMilesState();
+        setStatus(elements.mileError, milesState.error || "");
+        setStatus(elements.mileWarning, milesState.warning || "");
+        setStatus(elements.mileAdjusted, milesState.adjusted || "");
+
+        if (!milesState.valid) {
+          resetOutput();
+          return;
+        }
+
+        const { miles } = milesState;
+        const auctionAmount = Math.round(miles * auctionRate);
+        const bankAmount = Math.round(miles * bankRate);
+        const discountedAuctionAmount = getRoundedAuctionDiscount(auctionAmount);
+        const discountUnitRate = miles === 0 ? 0 : discountedAuctionAmount / miles;
+
+        elements.auctionSummary.textContent = `${formatAmount(auctionAmount)} → 値引き ${formatAmount(discountedAuctionAmount)}`;
+        elements.bankSummary.textContent = formatAmount(bankAmount);
+
+        elements.messageBox.value = [
+          "この度はお問い合わせいただきありがとうございました。",
+          "",
+          `250マイルごとのご提供となりますため、${formatMiles(miles)}でお見積りいたします。`,
+          "",
+          `ヤフオクですと、${auctionRate.toFixed(2)}円/マイル（${formatAmount(auctionAmount)}）のところお値引きさせて頂き、${formatAmount(discountedAuctionAmount)}（${discountUnitRate.toFixed(2)}円/マイル）でいかがでしょうか。よろしければ出品いたしますのでご都合をお知らせください。`,
+          "",
+          "最もお安く済ませたい場合、直接当方への銀行振込みを承ります。",
+          `こちらでよろしければ${formatAmount(bankAmount)}（${bankRate.toFixed(2)}円/マイル）でご提供が可能です。よろしければ振込口座をご案内いたしますのでご都合をお知らせください。`,
+          "",
+          "以上、ご検討の程よろしくお願いします。"
+        ].join("\n");
+
+        elements.copyButton.disabled = false;
+      }
+
+      function initialize() {
+        const savedRates = loadRates();
+        elements.auctionRate.value = savedRates.auctionRate.toFixed(2);
+        elements.bankRate.value = savedRates.bankRate.toFixed(2);
+
+        [elements.auctionRate, elements.bankRate, elements.mileCount].forEach((input) => {
+          input.addEventListener("input", update);
+          input.addEventListener("change", update);
+        });
+
+        elements.copyButton.addEventListener("click", copyMessage);
+
+        update();
+      }
+
+      initialize();
+    })();
+  </script>
+</body>
+</html>
