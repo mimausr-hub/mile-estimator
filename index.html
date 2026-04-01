@@ -134,7 +134,17 @@
     .rate-grid {
       display: grid;
       gap: 12px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    @media (max-width: 480px) {
+      .rate-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .rate-grid .field label {
+        font-size: 0.82rem;
+      }
     }
 
     .field {
@@ -377,9 +387,16 @@
               <h2 class="section-title">レート設定</h2>
               <div class="rate-grid">
                 <div class="field">
-                  <label for="auctionRate">ヤフオク</label>
+                  <label for="auctionRate">ヤフオク定価</label>
                   <div class="input-wrap">
                     <input id="auctionRate" type="number" inputmode="decimal" step="0.01" min="0" value="2.52">
+                    <span class="suffix">円/マイル</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="auctionDiscountRate">ヤフオク値引</label>
+                  <div class="input-wrap">
+                    <input id="auctionDiscountRate" type="number" inputmode="decimal" step="0.01" min="0" value="2.50">
                     <span class="suffix">円/マイル</span>
                   </div>
                 </div>
@@ -430,14 +447,16 @@
 
   <script>
     (() => {
-      const STORAGE_KEY = "mile-quote-rates-v1";
+      const STORAGE_KEY = "mile-quote-rates-v2";
       const DEFAULT_RATES = {
         auctionRate: 2.52,
+        auctionDiscountRate: 2.50,
         bankRate: 2.42
       };
 
       const elements = {
         auctionRate: document.getElementById("auctionRate"),
+        auctionDiscountRate: document.getElementById("auctionDiscountRate"),
         bankRate: document.getElementById("bankRate"),
         mileCount: document.getElementById("mileCount"),
         mileError: document.getElementById("mileError"),
@@ -462,6 +481,7 @@
           const parsed = JSON.parse(stored);
           return {
             auctionRate: Number.isFinite(parsed.auctionRate) ? parsed.auctionRate : DEFAULT_RATES.auctionRate,
+            auctionDiscountRate: Number.isFinite(parsed.auctionDiscountRate) ? parsed.auctionDiscountRate : DEFAULT_RATES.auctionDiscountRate,
             bankRate: Number.isFinite(parsed.bankRate) ? parsed.bankRate : DEFAULT_RATES.bankRate
           };
         } catch (error) {
@@ -469,9 +489,9 @@
         }
       }
 
-      function saveRates(auctionRate, bankRate) {
+      function saveRates(auctionRate, auctionDiscountRate, bankRate) {
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({ auctionRate, bankRate }));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ auctionRate, auctionDiscountRate, bankRate }));
         } catch (error) {
           return;
         }
@@ -483,18 +503,6 @@
 
       function formatMiles(miles) {
         return `${new Intl.NumberFormat("ja-JP").format(miles)}マイル`;
-      }
-
-      function getRoundedAuctionDiscount(amount) {
-        if (amount >= 100000) {
-          return Math.floor(amount / 10000) * 10000;
-        }
-
-        if (amount >= 10000) {
-          return Math.floor(amount / 1000) * 1000;
-        }
-
-        return Math.floor(amount / 100) * 100;
       }
 
       function parseRateInput(input, fallback) {
@@ -602,9 +610,10 @@
 
       function update() {
         const auctionRate = parseRateInput(elements.auctionRate, DEFAULT_RATES.auctionRate);
+        const auctionDiscountRate = parseRateInput(elements.auctionDiscountRate, DEFAULT_RATES.auctionDiscountRate);
         const bankRate = parseRateInput(elements.bankRate, DEFAULT_RATES.bankRate);
 
-        saveRates(auctionRate, bankRate);
+        saveRates(auctionRate, auctionDiscountRate, bankRate);
 
         const milesState = getMilesState();
         setStatus(elements.mileError, milesState.error || "");
@@ -618,19 +627,24 @@
 
         const { miles } = milesState;
         const auctionAmount = Math.round(miles * auctionRate);
+        const auctionDiscountAmount = Math.round(miles * auctionDiscountRate);
         const bankAmount = Math.round(miles * bankRate);
-        const discountedAuctionAmount = getRoundedAuctionDiscount(auctionAmount);
-        const discountUnitRate = miles === 0 ? 0 : discountedAuctionAmount / miles;
 
-        elements.auctionSummary.textContent = `${formatAmount(auctionAmount)} → 値引き ${formatAmount(discountedAuctionAmount)}`;
+        elements.auctionSummary.textContent = `${formatAmount(auctionAmount)} → 値引き ${formatAmount(auctionDiscountAmount)}`;
         elements.bankSummary.textContent = formatAmount(bankAmount);
+
+        // 250で割り切れる場合は調整文言を省略
+        const wasAdjusted = milesState.adjusted !== "";
+        const adjustLine = wasAdjusted
+          ? `250マイルごとのご提供となりますため、${formatMiles(miles)}でお見積りいたします。`
+          : `${formatMiles(miles)}でお見積りいたします。`;
 
         elements.messageBox.value = [
           "この度はお問い合わせいただきありがとうございました。",
           "",
-          `250マイルごとのご提供となりますため、${formatMiles(miles)}でお見積りいたします。`,
+          adjustLine,
           "",
-          `ヤフオクですと、${auctionRate.toFixed(2)}円/マイル（${formatAmount(auctionAmount)}）のところお値引きさせて頂き、${formatAmount(discountedAuctionAmount)}（${discountUnitRate.toFixed(2)}円/マイル）でいかがでしょうか。よろしければ出品いたしますのでご都合をお知らせください。`,
+          `ヤフオクですと、${auctionRate.toFixed(2)}円/マイル（${formatAmount(auctionAmount)}）のところお値引きさせて頂き、${formatAmount(auctionDiscountAmount)}（${auctionDiscountRate.toFixed(2)}円/マイル）でいかがでしょうか。よろしければ出品いたしますのでご都合をお知らせください。`,
           "",
           "最もお安く済ませたい場合、直接当方への銀行振込みを承ります。",
           `こちらでよろしければ${formatAmount(bankAmount)}（${bankRate.toFixed(2)}円/マイル）でご提供が可能です。よろしければ振込口座をご案内いたしますのでご都合をお知らせください。`,
@@ -644,9 +658,10 @@
       function initialize() {
         const savedRates = loadRates();
         elements.auctionRate.value = savedRates.auctionRate.toFixed(2);
+        elements.auctionDiscountRate.value = savedRates.auctionDiscountRate.toFixed(2);
         elements.bankRate.value = savedRates.bankRate.toFixed(2);
 
-        [elements.auctionRate, elements.bankRate, elements.mileCount].forEach((input) => {
+        [elements.auctionRate, elements.auctionDiscountRate, elements.bankRate, elements.mileCount].forEach((input) => {
           input.addEventListener("input", update);
           input.addEventListener("change", update);
         });
