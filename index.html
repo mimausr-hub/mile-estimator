@@ -91,6 +91,9 @@
     .app-header {
       margin-bottom: 14px;
       padding: 2px 2px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
     h1 {
@@ -363,6 +366,7 @@
   <main class="shell">
     <header class="app-header">
       <h1>マイル見積り</h1>
+      <button id="copyButton" class="button" type="button" disabled>コピー</button>
     </header>
 
     <section class="stack">
@@ -434,9 +438,6 @@
             <section class="message-wrap">
               <h2 class="section-title">メッセージ</h2>
               <textarea id="messageBox" class="message-box" readonly aria-label="自動生成メッセージ">マイル数を入力すると、ここにご案内文を生成します。</textarea>
-              <div class="actions">
-                <button id="copyButton" class="button" type="button" disabled>コピー</button>
-              </div>
             </section>
           </div>
         </div>
