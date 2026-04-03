@@ -408,14 +408,14 @@
                 <div class="field">
                   <label for="auctionRate">ヤフオク定価</label>
                   <div class="input-wrap">
-                    <input id="auctionRate" type="number" inputmode="decimal" step="0.01" min="0" value="2.52">
+                    <input id="auctionRate" type="number" inputmode="decimal" step="0.01" min="0" value="3.10">
                     <span class="suffix">円/マイル</span>
                   </div>
                 </div>
                 <div class="field">
                   <label for="auctionDiscountRate">ヤフオク値引</label>
                   <div class="input-wrap">
-                    <input id="auctionDiscountRate" type="number" inputmode="decimal" step="0.01" min="0" value="2.50">
+                    <input id="auctionDiscountRate" type="number" inputmode="decimal" step="0.01" min="0" value="3.05">
                     <span class="suffix">円/マイル</span>
                   </div>
                   <small class="profit-display" id="auctionProfit"></small>
@@ -424,7 +424,7 @@
                 <div class="field">
                   <label for="bankRate">銀行振込</label>
                   <div class="input-wrap">
-                    <input id="bankRate" type="number" inputmode="decimal" step="0.01" min="0" value="2.42">
+                    <input id="bankRate" type="number" inputmode="decimal" step="0.01" min="0" value="2.80">
                     <span class="suffix">円/マイル</span>
                   </div>
                   <small class="profit-display" id="bankProfit"></small>
@@ -467,11 +467,11 @@
 
   <script>
     (() => {
-      const STORAGE_KEY = "mile-quote-rates-v2";
+      const STORAGE_KEY = "mile-quote-rates-v3";
       const DEFAULT_RATES = {
-        auctionRate: 2.52,
-        auctionDiscountRate: 2.50,
-        bankRate: 2.42
+        auctionRate: 3.10,
+        auctionDiscountRate: 3.05,
+        bankRate: 2.80
       };
 
       const elements = {
