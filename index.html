@@ -419,6 +419,7 @@
                     <span class="suffix">円/マイル</span>
                   </div>
                   <small class="profit-display" id="auctionProfit"></small>
+                  <small class="profit-display" id="auctionProfitAmount"></small>
                 </div>
                 <div class="field">
                   <label for="bankRate">銀行振込</label>
@@ -427,6 +428,7 @@
                     <span class="suffix">円/マイル</span>
                   </div>
                   <small class="profit-display" id="bankProfit"></small>
+                  <small class="profit-display" id="bankProfitAmount"></small>
                 </div>
               </div>
             </section>
@@ -481,7 +483,9 @@
         mileWarning: document.getElementById("mileWarning"),
         mileAdjusted: document.getElementById("mileAdjusted"),
         auctionProfit: document.getElementById("auctionProfit"),
+        auctionProfitAmount: document.getElementById("auctionProfitAmount"),
         bankProfit: document.getElementById("bankProfit"),
+        bankProfitAmount: document.getElementById("bankProfitAmount"),
         auctionSummary: document.getElementById("auctionSummary"),
         bankSummary: document.getElementById("bankSummary"),
         messageBox: document.getElementById("messageBox"),
@@ -656,11 +660,30 @@
         setStatus(elements.mileAdjusted, milesState.adjusted || "");
 
         if (!milesState.valid) {
+          elements.auctionProfitAmount.textContent = "";
+          elements.bankProfitAmount.textContent = "";
           resetOutput();
           return;
         }
 
+        // 利益額 = 売上 - 原価（売上 × 利益率 / (1+利益率) でも同じ）
         const { miles } = milesState;
+        const auctionSales = Math.round(miles * auctionDiscountRate) * 0.9;
+        const bankSales = Math.round(miles * bankRate);
+        const cost = miles * COST_PER_MILE;
+        const auctionProfitAmount = Math.round(auctionSales - cost);
+        const bankProfitAmountVal = Math.round(bankSales - cost);
+
+        function formatProfitAmount(amount) {
+          const sign = amount >= 0 ? "+" : "";
+          return `利益 ${sign}${new Intl.NumberFormat("ja-JP").format(amount)}円`;
+        }
+
+        elements.auctionProfitAmount.textContent = formatProfitAmount(auctionProfitAmount);
+        elements.auctionProfitAmount.className = `profit-display ${auctionProfitAmount >= 0 ? "profit-positive" : "profit-negative"}`;
+        elements.bankProfitAmount.textContent = formatProfitAmount(bankProfitAmountVal);
+        elements.bankProfitAmount.className = `profit-display ${bankProfitAmountVal >= 0 ? "profit-positive" : "profit-negative"}`;
+
         const auctionAmount = Math.round(miles * auctionRate);
         const auctionDiscountAmount = Math.round(miles * auctionDiscountRate);
         const bankAmount = Math.round(miles * bankRate);
