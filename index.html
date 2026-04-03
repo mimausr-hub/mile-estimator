@@ -229,6 +229,20 @@
       color: var(--primary);
     }
 
+    .profit-display {
+      font-size: 0.8rem;
+      font-weight: 700;
+      min-height: 1.2em;
+    }
+
+    .profit-positive {
+      color: var(--primary);
+    }
+
+    .profit-negative {
+      color: var(--danger);
+    }
+
     .output-grid {
       display: grid;
       gap: 12px;
@@ -404,6 +418,7 @@
                     <input id="auctionDiscountRate" type="number" inputmode="decimal" step="0.01" min="0" value="2.50">
                     <span class="suffix">円/マイル</span>
                   </div>
+                  <small class="profit-display" id="auctionProfit"></small>
                 </div>
                 <div class="field">
                   <label for="bankRate">銀行振込</label>
@@ -411,6 +426,7 @@
                     <input id="bankRate" type="number" inputmode="decimal" step="0.01" min="0" value="2.42">
                     <span class="suffix">円/マイル</span>
                   </div>
+                  <small class="profit-display" id="bankProfit"></small>
                 </div>
               </div>
             </section>
@@ -464,6 +480,8 @@
         mileError: document.getElementById("mileError"),
         mileWarning: document.getElementById("mileWarning"),
         mileAdjusted: document.getElementById("mileAdjusted"),
+        auctionProfit: document.getElementById("auctionProfit"),
+        bankProfit: document.getElementById("bankProfit"),
         auctionSummary: document.getElementById("auctionSummary"),
         bankSummary: document.getElementById("bankSummary"),
         messageBox: document.getElementById("messageBox"),
@@ -616,6 +634,21 @@
         const bankRate = parseRateInput(elements.bankRate, DEFAULT_RATES.bankRate);
 
         saveRates(auctionRate, auctionDiscountRate, bankRate);
+
+        // 利益率計算: ¥10,000 → 8,121pt × 0.5 = 4,060.5マイル
+        const COST_PER_MILE = 10000 / (8121 * 0.5);
+        const auctionProfitRate = (auctionDiscountRate * 0.9 / COST_PER_MILE - 1) * 100;
+        const bankProfitRate = (bankRate / COST_PER_MILE - 1) * 100;
+
+        function formatProfit(rate) {
+          const sign = rate >= 0 ? "+" : "";
+          return `${sign}${rate.toFixed(1)}%`;
+        }
+
+        elements.auctionProfit.textContent = `利益率 ${formatProfit(auctionProfitRate)}`;
+        elements.auctionProfit.className = `profit-display ${auctionProfitRate >= 0 ? "profit-positive" : "profit-negative"}`;
+        elements.bankProfit.textContent = `利益率 ${formatProfit(bankProfitRate)}`;
+        elements.bankProfit.className = `profit-display ${bankProfitRate >= 0 ? "profit-positive" : "profit-negative"}`;
 
         const milesState = getMilesState();
         setStatus(elements.mileError, milesState.error || "");
