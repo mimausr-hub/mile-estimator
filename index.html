@@ -697,6 +697,12 @@
           ? `250マイルごとのご提供となりますため、${formatMiles(miles)}でお見積りいたします。`
           : `${formatMiles(miles)}でお見積りいたします。`;
 
+        // 有効期限: 翌日いっぱい
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+        const expiryDate = `${tomorrow.getMonth() + 1}月${tomorrow.getDate()}日（${dayNames[tomorrow.getDay()]}）`;
+
         elements.messageBox.value = [
           "この度はお問い合わせいただきありがとうございました。",
           "",
@@ -706,6 +712,8 @@
           "",
           "最もお安く済ませたい場合、直接当方への銀行振込みを承ります。",
           `こちらでよろしければ${formatAmount(bankAmount)}（${bankRate.toFixed(2)}円/マイル）でご提供が可能です。よろしければ振込口座をご案内いたしますのでご都合をお知らせください。`,
+          "",
+          `なお、在庫確保の関係上、本見積りの有効期限は${expiryDate}いっぱいとさせていただきます。`,
           "",
           "以上、ご検討の程よろしくお願いします。"
         ].join("\n");
