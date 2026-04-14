@@ -699,7 +699,7 @@
 
         // 有効期限: 翌日いっぱい
         const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setDate(tomorrow.getDate() + 2);
         const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
         const expiryDate = `${tomorrow.getMonth() + 1}月${tomorrow.getDate()}日（${dayNames[tomorrow.getDay()]}）`;
 
