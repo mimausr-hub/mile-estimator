@@ -108,6 +108,40 @@
       gap: 14px;
     }
 
+    .mode-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px;
+    }
+
+    .mode-tab {
+      flex: 1;
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 9px 12px;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+
+    .mode-tab.active {
+      background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(15, 118, 110, 0.22);
+    }
+
+    body.mode-auction-only .bank-only {
+      display: none !important;
+    }
+
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -383,6 +417,11 @@
       <button id="copyButton" class="button" type="button" disabled>コピー</button>
     </header>
 
+    <div class="mode-tabs" role="tablist">
+      <button class="mode-tab active" data-mode="both" type="button" role="tab">通常版（ヤフオク＋銀行振込）</button>
+      <button class="mode-tab" data-mode="auction-only" type="button" role="tab">ヤフオクのみ</button>
+    </div>
+
     <section class="stack">
       <article class="card">
         <div class="card-body">
@@ -421,7 +460,7 @@
                   <small class="profit-display" id="auctionProfit"></small>
                   <small class="profit-display" id="auctionProfitAmount"></small>
                 </div>
-                <div class="field">
+                <div class="field bank-only">
                   <label for="bankRate">銀行振込</label>
                   <div class="input-wrap">
                     <input id="bankRate" type="number" inputmode="decimal" step="0.01" min="0" value="2.80">
@@ -446,7 +485,7 @@
                   <div class="quote-label">ヤフオク</div>
                   <div class="quote-value" id="auctionSummary">-</div>
                 </div>
-                <div class="quote-row">
+                <div class="quote-row bank-only">
                   <div class="quote-label">銀行振込</div>
                   <div class="quote-value" id="bankSummary">-</div>
                 </div>
@@ -468,11 +507,14 @@
   <script>
     (() => {
       const STORAGE_KEY = "mile-quote-rates-v3";
+      const MODE_KEY = "mile-quote-mode-v1";
       const DEFAULT_RATES = {
         auctionRate: 3.10,
         auctionDiscountRate: 3.05,
         bankRate: 2.80
       };
+
+      let currentMode = "both"; // "both" or "auction-only"
 
       const elements = {
         auctionRate: document.getElementById("auctionRate"),
@@ -703,22 +745,46 @@
         const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
         const expiryDate = `${tomorrow.getMonth() + 1}月${tomorrow.getDate()}日（${dayNames[tomorrow.getDay()]}）`;
 
-        elements.messageBox.value = [
+        const messageLines = [
           "この度はお問い合わせいただきありがとうございました。",
           "",
           adjustLine,
           "",
-          `ヤフオクですと、${auctionRate.toFixed(2)}円/マイル（${formatAmount(auctionAmount)}）のところお値引きさせて頂き、${formatAmount(auctionDiscountAmount)}（${auctionDiscountRate.toFixed(2)}円/マイル）でいかがでしょうか。よろしければ出品いたしますのでご都合をお知らせください。`,
-          "",
-          "最もお安く済ませたい場合、直接当方への銀行振込みを承ります。",
-          `こちらでよろしければ${formatAmount(bankAmount)}（${bankRate.toFixed(2)}円/マイル）でご提供が可能です。よろしければ振込口座をご案内いたしますのでご都合をお知らせください。`,
+          `ヤフオクですと、${auctionRate.toFixed(2)}円/マイル（${formatAmount(auctionAmount)}）のところお値引きさせて頂き、${formatAmount(auctionDiscountAmount)}（${auctionDiscountRate.toFixed(2)}円/マイル）でいかがでしょうか。よろしければ出品いたしますのでご都合をお知らせください。`
+        ];
+
+        if (currentMode === "both") {
+          messageLines.push(
+            "",
+            "最もお安く済ませたい場合、直接当方への銀行振込みを承ります。",
+            `こちらでよろしければ${formatAmount(bankAmount)}（${bankRate.toFixed(2)}円/マイル）でご提供が可能です。よろしければ振込口座をご案内いたしますのでご都合をお知らせください。`
+          );
+        }
+
+        messageLines.push(
           "",
           `なお、在庫確保の関係上、本見積りの有効期限は${expiryDate}いっぱいとさせていただきます。`,
           "",
           "以上、ご検討の程よろしくお願いします。"
-        ].join("\n");
+        );
+
+        elements.messageBox.value = messageLines.join("\n");
 
         elements.copyButton.disabled = false;
+      }
+
+      function applyMode(mode) {
+        currentMode = mode;
+        document.body.classList.toggle("mode-auction-only", mode === "auction-only");
+        document.querySelectorAll(".mode-tab").forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.mode === mode);
+        });
+        try {
+          localStorage.setItem(MODE_KEY, mode);
+        } catch (error) {
+          // ignore
+        }
+        update();
       }
 
       function initialize() {
@@ -734,7 +800,15 @@
 
         elements.copyButton.addEventListener("click", copyMessage);
 
-        update();
+        // モード切替タブ
+        document.querySelectorAll(".mode-tab").forEach((tab) => {
+          tab.addEventListener("click", () => applyMode(tab.dataset.mode));
+        });
+
+        const savedMode = (() => {
+          try { return localStorage.getItem(MODE_KEY); } catch { return null; }
+        })();
+        applyMode(savedMode === "auction-only" ? "auction-only" : "both");
       }
 
       initialize();
