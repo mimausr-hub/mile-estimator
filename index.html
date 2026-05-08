@@ -175,13 +175,35 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    @media (max-width: 480px) {
+    /* レート入力は3列で狭いので、単位を入力欄の下に置く */
+    .rate-grid .input-wrap .suffix {
+      position: static;
+      transform: none;
+      display: block;
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .rate-grid .input-wrap input {
+      padding-right: 14px;
+    }
+
+    @media (max-width: 560px) {
       .rate-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 8px;
+        grid-template-columns: 1fr;
+        gap: 10px;
       }
-      .rate-grid .field label {
-        font-size: 0.82rem;
+      .rate-grid .input-wrap .suffix {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-top: 0;
+        display: inline-block;
+        text-align: left;
+      }
+      .rate-grid .input-wrap input {
+        padding-right: 78px;
       }
     }
 
@@ -454,7 +476,7 @@
                 <div class="field">
                   <label for="auctionDiscountRate">ヤフオク値引</label>
                   <div class="input-wrap">
-                    <input id="auctionDiscountRate" type="number" inputmode="decimal" step="0.01" min="0" value="3.05">
+                    <input id="auctionDiscountRate" type="number" inputmode="decimal" step="0.01" min="0" value="3.10">
                     <span class="suffix">円/マイル</span>
                   </div>
                   <small class="profit-display" id="auctionProfit"></small>
@@ -510,7 +532,7 @@
       const MODE_KEY = "mile-quote-mode-v1";
       const DEFAULT_RATES = {
         auctionRate: 3.10,
-        auctionDiscountRate: 3.05,
+        auctionDiscountRate: 3.10,
         bankRate: 2.80
       };
 
