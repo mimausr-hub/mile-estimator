@@ -576,6 +576,19 @@
     (() => {
       const STORAGE_KEY = "mile-quote-rates-v4";
       const MODE_KEY = "mile-quote-mode-v1";
+      const YAHOO_FEE = 0.10;
+      const COST_KEY = "mile-quote-cost-v1";
+      // 原価はページに書かない。URLの #c=お急ぎ,割引（円/マイル）で一度開くと、その端末にだけ保存される
+      const COSTS = (() => {
+        const m = location.hash.match(/c=([0-9.]+),([0-9.]+)/);
+        if (m) {
+          const v = { express: Number(m[1]), discount: Number(m[2]) };
+          try { localStorage.setItem(COST_KEY, JSON.stringify(v)); } catch (e) { /* ignore */ }
+          history.replaceState(null, "", location.pathname + location.search);
+          return v;
+        }
+        try { return JSON.parse(localStorage.getItem(COST_KEY) || "null"); } catch (e) { return null; }
+      })();
 
       // コースの定義。並び順＝画面・メッセージ・表の表示順（48時間以内を先に、割引価格を後に）
       const COURSES = [
@@ -618,6 +631,8 @@
 
       const yen = (n) => `${new Intl.NumberFormat("ja-JP").format(n)}円`;
       const milesText = (n) => `${new Intl.NumberFormat("ja-JP").format(n)}マイル`;
+      const pct = (v) => `${v >= 0 ? "" : "−"}${Math.abs(v).toFixed(1)}%`;
+      const signedYen = (n) => `${n >= 0 ? "+" : "−"}${new Intl.NumberFormat("ja-JP").format(Math.abs(n))}円`;
 
       // ---- 保存と読み込み ----
       function loadSettings() {
@@ -644,6 +659,16 @@
         return Number.isFinite(v) && v >= 0 ? v : fallback;
       }
 
+      // ---- 利益 ----
+      const costPerMile = (course) => (COSTS && Number.isFinite(COSTS[course.key]) ? COSTS[course.key] : null);
+
+      // 売値に対する利益率。ヤフオクは手数料10%を引いた手取りで計算する
+      function marginRate(rate, channel, cost) {
+        if (!rate) return 0;
+        const net = channel === "auction" ? rate * (1 - YAHOO_FEE) : rate;
+        return (net - cost) / rate * 100;
+      }
+
       // ---- 入力欄の生成 ----
       function buildRateInputs(settings) {
         elements.courseRates.innerHTML = "";
@@ -662,6 +687,10 @@
                   <div class="input-wrap">
                     <input id="${c.key}-${f.key}" type="number" inputmode="decimal" step="0.01" min="0" value="${settings.courses[c.key][f.key].toFixed(2)}">
                     <span class="suffix">円/マイル</span>
+                  </div>
+                  <div class="rate-row-profit">
+                    <span id="${c.key}-${f.key}-margin"></span>
+                    <span id="${c.key}-${f.key}-amount"></span>
                   </div>
                 </div>`).join("")}
             </div>`;
@@ -745,6 +774,25 @@
 
         COURSES.forEach((c) => {
           document.getElementById(`meta-${c.key}`).textContent = c.lead;
+          const cost = costPerMile(c);
+          if (cost === null) return; // 原価が未設定の端末では利益を出さない
+          RATE_FIELDS.forEach((f) => {
+            const rate = settings.courses[c.key][f.key];
+            const m = marginRate(rate, f.channel, cost);
+            const mEl = document.getElementById(`${c.key}-${f.key}-margin`);
+            mEl.textContent = `利益率 ${pct(m)}`;
+            mEl.className = m >= 0 ? "profit-positive" : "profit-negative";
+            const aEl = document.getElementById(`${c.key}-${f.key}-amount`);
+            if (milesState.valid) {
+              const miles = milesState.miles;
+              const sales = Math.round(miles * rate) * (f.channel === "auction" ? 1 - YAHOO_FEE : 1);
+              const profit = Math.round(sales - miles * cost);
+              aEl.textContent = signedYen(profit);
+              aEl.className = profit >= 0 ? "profit-positive" : "profit-negative";
+            } else {
+              aEl.textContent = "";
+            }
+          });
         });
 
         if (!milesState.valid) {
